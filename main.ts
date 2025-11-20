@@ -5352,49 +5352,59 @@ class LettaChatView extends ItemView {
 	}
 
 	async approveFileView(container: HTMLElement, proposal: ObsidianProposal) {
-		try {
-			if (!proposal.path) {
-				this.showProposalError(container, "No file path provided");
-				return;
-			}
-			
-			const file = this.app.vault.getAbstractFileByPath(proposal.path);
-			
-			if (!file || !(file instanceof TFile)) {
-				this.showProposalError(container, `File not found: ${proposal.path}`);
-				return;
-			}
-			
-			const content = await this.app.vault.read(file);
-			
-			const systemMessage = `[System: File content from '${proposal.path}']\n\n${content}\n\n[End of file]`;
-			
-			const messageEl = this.chatContainer.createEl("div", {
-				cls: "letta-message letta-system-message"
-			});
-			
-			const bubble = messageEl.createEl("div", {
-				cls: "letta-message-bubble"
-			});
-			
-			bubble.createEl("div", {
-				text: `📄 File sent to agent: ${proposal.path} (${content.length} characters)`,
-				cls: "letta-file-injection-header"
-			});
-			
-			this.showProposalSuccess(container, 
-				`File viewed: ${proposal.path} (${content.length} chars)`);
-			
-			this.chatContainer.scrollTo({
-				top: this.chatContainer.scrollHeight,
-				behavior: "smooth"
-			});
-			
-			console.log(`[Letta Plugin] File viewed and sent to agent: ${proposal.path}`);
-		} catch (error) {
-			console.error("[Letta Plugin] Failed to approve file view:", error);
-			this.showProposalError(container, `Failed to view file: ${error.message}`);
+		console.log("[Letta Plugin] approveFileView called:", { path: proposal.path });
+		
+		// Validate parameters
+		if (!proposal.path) {
+			const error = "No file path provided";
+			console.error("[Letta Plugin] View validation failed:", error);
+			throw new Error(error);
 		}
+		
+		// Normalize path
+		const normalizedPath = this.normalizePath(proposal.path);
+		console.log("[Letta Plugin] Normalized path:", { original: proposal.path, normalized: normalizedPath });
+		
+		// Find file
+		const file = this.app.vault.getAbstractFileByPath(normalizedPath);
+		console.log("[Letta Plugin] File lookup result:", { found: !!file, isFile: file instanceof TFile });
+		
+		if (!file || !(file instanceof TFile)) {
+			const error = `File not found: ${normalizedPath}`;
+			console.error("[Letta Plugin]", error);
+			throw new Error(error);
+		}
+		
+		// Read file
+		console.log("[Letta Plugin] Reading file...");
+		const content = await this.app.vault.read(file);
+		console.log("[Letta Plugin] File read successfully, length:", content.length);
+		
+		// Create system message
+		const systemMessage = `[System: File content from '${normalizedPath}']\n\n${content}\n\n[End of file]`;
+		
+		const messageEl = this.chatContainer.createEl("div", {
+			cls: "letta-message letta-system-message"
+		});
+		
+		const bubble = messageEl.createEl("div", {
+			cls: "letta-message-bubble"
+		});
+		
+		bubble.createEl("div", {
+			text: `📄 File sent to agent: ${normalizedPath} (${content.length} characters)`,
+			cls: "letta-file-injection-header"
+		});
+		
+		this.showProposalSuccess(container, 
+			`File viewed: ${normalizedPath} (${content.length} chars)`);
+		
+		this.chatContainer.scrollTo({
+			top: this.chatContainer.scrollHeight,
+			behavior: "smooth"
+		});
+		
+		console.log(`[Letta Plugin] ✅ View complete: ${normalizedPath}`);
 	}
 
 	async denyFileView(container: HTMLElement, proposal: ObsidianProposal) {
@@ -5478,40 +5488,54 @@ class LettaChatView extends ItemView {
 	}
 
 	async approveFileCreate(container: HTMLElement, proposal: ObsidianProposal) {
-		try {
-			if (!proposal.path || !proposal.content) {
-				this.showProposalError(container, "Missing required parameters");
-				return;
-			}
-			
-			const existingFile = this.app.vault.getAbstractFileByPath(proposal.path);
-			if (existingFile) {
-				this.showProposalError(container, `File already exists: ${proposal.path}`);
-				return;
-			}
-			
-			const folderPath = proposal.path.substring(0, proposal.path.lastIndexOf('/'));
-			if (folderPath) {
-				const folderExists = this.app.vault.getAbstractFileByPath(folderPath);
-				if (!folderExists) {
-					await this.app.vault.createFolder(folderPath);
-					console.log(`[Letta Plugin] Created folder: ${folderPath}`);
-				}
-			}
-			
-			const newFile = await this.app.vault.create(proposal.path, proposal.content);
-			
-			const leaf = this.app.workspace.getLeaf('tab');
-			await leaf.openFile(newFile);
-			
-			this.showProposalSuccess(container, 
-				`File created: ${proposal.path}`);
-			
-			console.log(`[Letta Plugin] File created: ${proposal.path}`);
-		} catch (error) {
-			console.error("[Letta Plugin] Failed to create file:", error);
-			this.showProposalError(container, `Failed to create file: ${error.message}`);
+		console.log("[Letta Plugin] approveFileCreate called:", {
+			path: proposal.path,
+			content_length: proposal.content?.length
+		});
+		
+		// Validate parameters
+		if (!proposal.path || !proposal.content) {
+			const error = "Missing required parameters (path and content)";
+			console.error("[Letta Plugin] Create validation failed:", error);
+			throw new Error(error);
 		}
+		
+		// Normalize path
+		const normalizedPath = this.normalizePath(proposal.path);
+		console.log("[Letta Plugin] Normalized path:", { original: proposal.path, normalized: normalizedPath });
+		
+		// Check if file already exists
+		const existingFile = this.app.vault.getAbstractFileByPath(normalizedPath);
+		if (existingFile) {
+			const error = `File already exists: ${normalizedPath}`;
+			console.error("[Letta Plugin]", error);
+			throw new Error(error);
+		}
+		
+		// Ensure parent folder exists
+		const folderPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/'));
+		if (folderPath) {
+			const folderExists = this.app.vault.getAbstractFileByPath(folderPath);
+			if (!folderExists) {
+				console.log(`[Letta Plugin] Creating folder: ${folderPath}`);
+				await this.app.vault.createFolder(folderPath);
+			}
+		}
+		
+		// Create file
+		console.log("[Letta Plugin] Creating file...");
+		const newFile = await this.app.vault.create(normalizedPath, proposal.content);
+		console.log("[Letta Plugin] File created successfully");
+		
+		// Open file in new tab
+		const leaf = this.app.workspace.getLeaf('tab');
+		await leaf.openFile(newFile);
+		
+		// Show success in UI if container exists
+		this.showProposalSuccess(container, 
+			`File created: ${normalizedPath}`);
+		
+		console.log(`[Letta Plugin] ✅ Create complete: ${normalizedPath}`);
 	}
 
 	async denyFileCreate(container: HTMLElement, proposal: ObsidianProposal) {
@@ -5627,39 +5651,56 @@ class LettaChatView extends ItemView {
 	}
 
 	async approveStrReplace(container: HTMLElement, proposal: ObsidianProposal) {
-		try {
-			if (!proposal.path || !proposal.old_str || proposal.new_str === undefined) {
-				this.showProposalError(container, "Missing required parameters");
-				return;
-			}
-			
-			const file = this.app.vault.getAbstractFileByPath(proposal.path);
-			
-			if (!file || !(file instanceof TFile)) {
-				this.showProposalError(container, `File not found: ${proposal.path}`);
-				return;
-			}
-			
-			const content = await this.app.vault.read(file);
-			
-			if (!content.includes(proposal.old_str)) {
-				this.showProposalError(container, `String not found in file`);
-				return;
-			}
-			
-			const newContent = content.split(proposal.old_str).join(proposal.new_str);
-			const occurrences = (content.match(new RegExp(proposal.old_str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
-			
-			await this.app.vault.modify(file, newContent);
-			
-			this.showProposalSuccess(container, 
-				`Replaced ${occurrences} occurrence${occurrences > 1 ? 's' : ''} in ${proposal.path}`);
-			
-			console.log(`[Letta Plugin] String replaced in: ${proposal.path}`);
-		} catch (error) {
-			console.error("[Letta Plugin] Failed to replace string:", error);
-			this.showProposalError(container, `Failed to replace string: ${error.message}`);
+		console.log("[Letta Plugin] approveStrReplace called:", {
+			path: proposal.path,
+			old_str_length: proposal.old_str?.length,
+			new_str_length: proposal.new_str?.length
+		});
+		
+		// Validate parameters
+		if (!proposal.path || !proposal.old_str || proposal.new_str === undefined) {
+			const error = "Missing required parameters (path, old_str, new_str)";
+			console.error("[Letta Plugin] Replace validation failed:", error);
+			throw new Error(error);
 		}
+		
+		// Normalize path
+		const normalizedPath = this.normalizePath(proposal.path);
+		console.log("[Letta Plugin] Normalized path:", { original: proposal.path, normalized: normalizedPath });
+		
+		// Find file
+		const file = this.app.vault.getAbstractFileByPath(normalizedPath);
+		console.log("[Letta Plugin] File lookup result:", { found: !!file, isFile: file instanceof TFile });
+		
+		if (!file || !(file instanceof TFile)) {
+			const error = `File not found: ${normalizedPath}`;
+			console.error("[Letta Plugin]", error);
+			throw new Error(error);
+		}
+		
+		// Read file
+		const content = await this.app.vault.read(file);
+		
+		// Check if string exists
+		if (!content.includes(proposal.old_str)) {
+			const error = `String not found in file: "${proposal.old_str.substring(0, 50)}..."`;
+			console.error("[Letta Plugin]", error);
+			throw new Error(error);
+		}
+		
+		// Perform replacement
+		const newContent = content.split(proposal.old_str).join(proposal.new_str);
+		const occurrences = (content.match(new RegExp(proposal.old_str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+		
+		console.log("[Letta Plugin] Replacing", occurrences, "occurrences");
+		await this.app.vault.modify(file, newContent);
+		console.log("[Letta Plugin] File modified successfully");
+		
+		// Show success in UI if container exists
+		this.showProposalSuccess(container, 
+			`Replaced ${occurrences} occurrence${occurrences > 1 ? 's' : ''} in ${normalizedPath}`);
+		
+		console.log(`[Letta Plugin] ✅ Replace complete: ${normalizedPath}`);
 	}
 
 	async denyStrReplace(container: HTMLElement, proposal: ObsidianProposal) {
@@ -5773,40 +5814,61 @@ class LettaChatView extends ItemView {
 	}
 
 	async approveFileInsert(container: HTMLElement, proposal: ObsidianProposal) {
-		try {
-			if (!proposal.path || !proposal.text || proposal.line_number === undefined || proposal.line_number === null) {
-				this.showProposalError(container, "Missing required parameters (path, text, line_number)");
-				return;
-			}
-			
-			const file = this.app.vault.getAbstractFileByPath(proposal.path);
-			
-			if (!file || !(file instanceof TFile)) {
-				this.showProposalError(container, `File not found: ${proposal.path}`);
-				return;
-			}
-			
-			const content = await this.app.vault.read(file);
-			const lines = content.split('\n');
-			
-			if (proposal.line_number < 0 || proposal.line_number > lines.length) {
-				this.showProposalError(container, `Invalid line number: ${proposal.line_number}`);
-				return;
-			}
-			
-			lines.splice(proposal.line_number, 0, proposal.text);
-			const newContent = lines.join('\n');
-			
-			await this.app.vault.modify(file, newContent);
-			
-			this.showProposalSuccess(container, 
-				`Text inserted at line ${proposal.line_number} in ${proposal.path}`);
-			
-			console.log(`[Letta Plugin] Text inserted in: ${proposal.path}`);
-		} catch (error) {
-			console.error("[Letta Plugin] Failed to insert text:", error);
-			this.showProposalError(container, `Failed to insert text: ${error.message}`);
+		console.log("[Letta Plugin] approveFileInsert called:", {
+			path: proposal.path,
+			line_number: proposal.line_number,
+			text_length: proposal.text?.length
+		});
+		
+		// Validate parameters
+		if (!proposal.path || !proposal.text || proposal.line_number === undefined || proposal.line_number === null) {
+			const error = "Missing required parameters (path, text, line_number)";
+			console.error("[Letta Plugin] Insert validation failed:", error);
+			throw new Error(error);
 		}
+		
+		// Normalize path (remove leading slash)
+		const normalizedPath = this.normalizePath(proposal.path);
+		console.log("[Letta Plugin] Normalized path:", { original: proposal.path, normalized: normalizedPath });
+		
+		// Find file
+		const file = this.app.vault.getAbstractFileByPath(normalizedPath);
+		console.log("[Letta Plugin] File lookup result:", { found: !!file, isFile: file instanceof TFile });
+		
+		if (!file || !(file instanceof TFile)) {
+			const error = `File not found: ${normalizedPath} (original: ${proposal.path})`;
+			console.error("[Letta Plugin]", error);
+			throw new Error(error);
+		}
+		
+		// Read and process file
+		const content = await this.app.vault.read(file);
+		const lines = content.split('\n');
+		console.log("[Letta Plugin] File info:", { 
+			lineCount: lines.length,
+			insertAt: proposal.line_number
+		});
+		
+		// Validate line number
+		if (proposal.line_number < 0 || proposal.line_number > lines.length) {
+			const error = `Invalid line number: ${proposal.line_number} (file has ${lines.length} lines)`;
+			console.error("[Letta Plugin]", error);
+			throw new Error(error);
+		}
+		
+		// Perform insertion
+		lines.splice(proposal.line_number, 0, proposal.text);
+		const newContent = lines.join('\n');
+		
+		console.log("[Letta Plugin] Modifying file...");
+		await this.app.vault.modify(file, newContent);
+		console.log("[Letta Plugin] File modified successfully");
+		
+		// Show success in UI if container exists
+		this.showProposalSuccess(container, 
+			`Text inserted at line ${proposal.line_number} in ${normalizedPath}`);
+		
+		console.log(`[Letta Plugin] ✅ Insert complete: ${normalizedPath}`);
 	}
 
 	async denyFileInsert(container: HTMLElement, proposal: ObsidianProposal) {
@@ -5903,29 +5965,39 @@ class LettaChatView extends ItemView {
 	}
 
 	async approveFileDelete(container: HTMLElement, proposal: ObsidianProposal) {
-		try {
-			if (!proposal.path) {
-				this.showProposalError(container, "No file path provided");
-				return;
-			}
-			
-			const file = this.app.vault.getAbstractFileByPath(proposal.path);
-			
-			if (!file || !(file instanceof TFile)) {
-				this.showProposalError(container, `File not found: ${proposal.path}`);
-				return;
-			}
-			
-			await this.app.vault.trash(file, true);
-			
-			this.showProposalSuccess(container, 
-				`File deleted: ${proposal.path}`);
-			
-			console.log(`[Letta Plugin] File deleted: ${proposal.path}`);
-		} catch (error) {
-			console.error("[Letta Plugin] Failed to delete file:", error);
-			this.showProposalError(container, `Failed to delete file: ${error.message}`);
+		console.log("[Letta Plugin] approveFileDelete called:", { path: proposal.path });
+		
+		// Validate parameters
+		if (!proposal.path) {
+			const error = "No file path provided";
+			console.error("[Letta Plugin] Delete validation failed:", error);
+			throw new Error(error);
 		}
+		
+		// Normalize path
+		const normalizedPath = this.normalizePath(proposal.path);
+		console.log("[Letta Plugin] Normalized path:", { original: proposal.path, normalized: normalizedPath });
+		
+		// Find file
+		const file = this.app.vault.getAbstractFileByPath(normalizedPath);
+		console.log("[Letta Plugin] File lookup result:", { found: !!file, isFile: file instanceof TFile });
+		
+		if (!file || !(file instanceof TFile)) {
+			const error = `File not found: ${normalizedPath}`;
+			console.error("[Letta Plugin]", error);
+			throw new Error(error);
+		}
+		
+		// Delete file
+		console.log("[Letta Plugin] Moving to trash...");
+		await this.app.vault.trash(file, true);
+		console.log("[Letta Plugin] File moved to trash successfully");
+		
+		// Show success in UI if container exists
+		this.showProposalSuccess(container, 
+			`File deleted: ${normalizedPath}`);
+		
+		console.log(`[Letta Plugin] ✅ Delete complete: ${normalizedPath}`);
 	}
 
 	async denyFileDelete(container: HTMLElement, proposal: ObsidianProposal) {
@@ -7965,10 +8037,16 @@ class LettaChatView extends ItemView {
 				try {
 					await this.executeObsidianCommand(toolArgs);
 					console.log(`[Letta Plugin] Obsidian command executed successfully`);
-				} catch (error) {
+				} catch (error: any) {
 					console.error(`[Letta Plugin] Failed to execute obsidian command:`, error);
-					// Continue with approval even if execution fails
-					// The agent will see the result and can retry
+					// Operation failed - send denial with error details so agent knows what went wrong
+					await this.sendApprovalResponse(approvalRequestId, false, toolArgs, error.message);
+					
+					// Remove the approval UI
+					setTimeout(() => {
+						approvalEl.remove();
+					}, 500);
+					return; // Don't send approval
 				}
 			}
 
@@ -8082,46 +8160,82 @@ class LettaChatView extends ItemView {
 		}
 	}
 
+	private normalizePath(path: string): string {
+		if (!path) return path;
+		
+		// Remove leading slash for Obsidian compatibility
+		// Obsidian expects paths like "folder/file.md", not "/folder/file.md"
+		let normalized = path.startsWith('/') ? path.substring(1) : path;
+		
+		// Remove trailing slash
+		normalized = normalized.endsWith('/') ? normalized.substring(0, normalized.length - 1) : normalized;
+		
+		return normalized;
+	}
+
 	async executeObsidianCommand(toolArgs: any) {
 		const command = toolArgs.command;
 		console.log(`[Letta Plugin] executeObsidianCommand: ${command}`, toolArgs);
 		
 		const proposal = toolArgs as ObsidianProposal;
-		const dummyContainer = createDiv(); // Dummy container for error messages
+		const dummyContainer = createDiv(); // Dummy container for UI methods
 		
-		switch(command) {
-			case "view":
-				// View doesn't modify anything, just return
-				console.log(`[Letta Plugin] View command - no execution needed`);
-				break;
-			case "create":
-				await this.approveFileCreate(dummyContainer, proposal);
-				break;
-			case "str_replace":
-				await this.approveStrReplace(dummyContainer, proposal);
-				break;
-			case "insert":
-				await this.approveFileInsert(dummyContainer, proposal);
-				break;
-			case "delete":
-				await this.approveFileDelete(dummyContainer, proposal);
-				break;
-			case "attach":
-				await this.approveFileAttach(dummyContainer, proposal);
-				break;
-			case "detach":
-				await this.approveFileDetach(dummyContainer, proposal);
-				break;
-			case "search":
-				// Search doesn't modify anything, just return
-				console.log(`[Letta Plugin] Search command - no execution needed`);
-				break;
-			case "list":
-				// List doesn't modify anything, just return
-				console.log(`[Letta Plugin] List command - no execution needed`);
-				break;
-			default:
-				console.error(`[Letta Plugin] Unknown obsidian command: ${command}`);
+		try {
+			switch(command) {
+				case "view":
+					// View is read-only, no execution needed
+					console.log(`[Letta Plugin] View command - no execution needed`);
+					break;
+					
+				case "create":
+					await this.approveFileCreate(dummyContainer, proposal);
+					console.log(`[Letta Plugin] Create executed successfully`);
+					break;
+					
+				case "str_replace":
+					await this.approveStrReplace(dummyContainer, proposal);
+					console.log(`[Letta Plugin] Replace executed successfully`);
+					break;
+					
+				case "insert":
+					await this.approveFileInsert(dummyContainer, proposal);
+					console.log(`[Letta Plugin] Insert executed successfully`);
+					break;
+					
+				case "delete":
+					await this.approveFileDelete(dummyContainer, proposal);
+					console.log(`[Letta Plugin] Delete executed successfully`);
+					break;
+					
+				case "attach":
+					await this.approveFileAttach(dummyContainer, proposal);
+					console.log(`[Letta Plugin] Attach executed successfully`);
+					break;
+					
+				case "detach":
+					await this.approveFileDetach(dummyContainer, proposal);
+					console.log(`[Letta Plugin] Detach executed successfully`);
+					break;
+					
+				case "search":
+					// Search is read-only, no execution needed
+					console.log(`[Letta Plugin] Search command - no execution needed`);
+					break;
+					
+				case "list":
+					// List is read-only, no execution needed
+					console.log(`[Letta Plugin] List command - no execution needed`);
+					break;
+					
+				default:
+					const error = `Unknown obsidian command: ${command}`;
+					console.error(`[Letta Plugin]`, error);
+					throw new Error(error);
+			}
+		} catch (error: any) {
+			console.error(`[Letta Plugin] Failed to execute ${command}:`, error);
+			new Notice(`Failed to ${command} file: ${error.message}`);
+			throw error; // Re-throw so caller knows it failed
 		}
 	}
 
