@@ -7959,6 +7959,19 @@ class LettaChatView extends ItemView {
 			denyBtn.disabled = true;
 			approveBtn.textContent = "Approving...";
 
+			// Execute obsidian tool operations client-side before sending approval
+			if (toolName === "obsidian" && toolArgs && toolArgs.command) {
+				console.log(`[Letta Plugin] Executing obsidian command: ${toolArgs.command}`);
+				try {
+					await this.executeObsidianCommand(toolArgs);
+					console.log(`[Letta Plugin] Obsidian command executed successfully`);
+				} catch (error) {
+					console.error(`[Letta Plugin] Failed to execute obsidian command:`, error);
+					// Continue with approval even if execution fails
+					// The agent will see the result and can retry
+				}
+			}
+
 			await this.sendApprovalResponse(approvalRequestId, true, toolArgs);
 
 			// Remove the approval UI after a short delay
@@ -8066,6 +8079,49 @@ class LettaChatView extends ItemView {
 			this.sendButton.disabled = false;
 			this.sendButton.textContent = "Send";
 			this.sendButton.removeClass("letta-button-loading");
+		}
+	}
+
+	async executeObsidianCommand(toolArgs: any) {
+		const command = toolArgs.command;
+		console.log(`[Letta Plugin] executeObsidianCommand: ${command}`, toolArgs);
+		
+		const proposal = toolArgs as ObsidianProposal;
+		const dummyContainer = createDiv(); // Dummy container for error messages
+		
+		switch(command) {
+			case "view":
+				// View doesn't modify anything, just return
+				console.log(`[Letta Plugin] View command - no execution needed`);
+				break;
+			case "create":
+				await this.approveFileCreate(dummyContainer, proposal);
+				break;
+			case "str_replace":
+				await this.approveStrReplace(dummyContainer, proposal);
+				break;
+			case "insert":
+				await this.approveFileInsert(dummyContainer, proposal);
+				break;
+			case "delete":
+				await this.approveFileDelete(dummyContainer, proposal);
+				break;
+			case "attach":
+				await this.approveFileAttach(dummyContainer, proposal);
+				break;
+			case "detach":
+				await this.approveFileDetach(dummyContainer, proposal);
+				break;
+			case "search":
+				// Search doesn't modify anything, just return
+				console.log(`[Letta Plugin] Search command - no execution needed`);
+				break;
+			case "list":
+				// List doesn't modify anything, just return
+				console.log(`[Letta Plugin] List command - no execution needed`);
+				break;
+			default:
+				console.error(`[Letta Plugin] Unknown obsidian command: ${command}`);
 		}
 	}
 
