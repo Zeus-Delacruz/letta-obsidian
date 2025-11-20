@@ -1495,17 +1495,18 @@ def obsidian(
 		try {
 			if (!existingTool) {
 				console.log(`[Letta Plugin] Creating new tool '${toolName}'...`);
-				tool = await this.client.tools.upsert({
-					name: toolName,
-					sourceCode: obsidianToolCode,
-					description: "Unified tool for Obsidian vault operations (view, create, edit, search, etc.) - requires approval",
-					tags: ["obsidian", "vault", "requires-approval"],
-					defaultRequiresApproval: true
-				} as any);
-				console.log("[Letta Plugin] Successfully created Obsidian tool:", tool);
 			} else {
-				console.log(`[Letta Plugin] Using existing tool '${toolName}'`);
+				console.log(`[Letta Plugin] Updating existing tool '${toolName}'...`);
 			}
+			
+			tool = await this.client.tools.upsert({
+				name: toolName,
+				sourceCode: obsidianToolCode,
+				description: "Unified tool for Obsidian vault operations (view, create, edit, search, etc.) - requires approval",
+				tags: ["obsidian", "vault", "requires-approval"],
+				defaultRequiresApproval: true
+			} as any);
+			console.log("[Letta Plugin] Successfully created/updated Obsidian tool:", tool);
 
 			if (this.agent && tool && tool.id) {
 				try {
