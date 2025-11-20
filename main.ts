@@ -2649,9 +2649,8 @@ class LettaChatView extends ItemView {
 						break;
 
 					case "approval_request_message":
-						// DISABLED: Approval handling commented out due to upstream API issues
-						// console.log("[Letta Plugin] Found historical approval_request_message:", message);
-						// await this.handleApprovalRequest(message);
+						console.log("[Letta Plugin] Found historical approval_request_message:", message);
+						await this.handleApprovalRequest(message);
 						break;
 
 					default:
@@ -7429,9 +7428,8 @@ class LettaChatView extends ItemView {
 				}
 				break;
 			case "approval_request_message":
-				// DISABLED: Approval handling commented out due to upstream API issues
-				// console.log("[Letta Plugin] Received approval_request_message:", message);
-				// await this.handleApprovalRequest(message);
+				console.log("[Letta Plugin] Received approval_request_message:", message);
+				await this.handleApprovalRequest(message);
 				break;
 			case "assistant_message":
 				// Processing streaming assistant message
