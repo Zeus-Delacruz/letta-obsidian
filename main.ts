@@ -5664,9 +5664,10 @@ class LettaChatView extends ItemView {
 
 	async enhanceInsertProposal(container: HTMLElement, proposal: ObsidianProposal) {
 		console.log("[Letta Plugin] Enhancing insert proposal for:", proposal.path);
+		console.log("[Letta Plugin] Insert proposal line_number:", proposal.line_number);
 		
-		if (!proposal.path || !proposal.text || proposal.line_number === undefined) {
-			this.showProposalError(container, "Missing required parameters (path, text, line_number)");
+		if (!proposal.path || !proposal.text || proposal.line_number === undefined || proposal.line_number === null) {
+			this.showProposalError(container, "Missing required parameters: path, text, and line_number are all required for insert. Agent must provide line_number (0-indexed).");
 			return;
 		}
 		
@@ -5767,8 +5768,8 @@ class LettaChatView extends ItemView {
 
 	async approveFileInsert(container: HTMLElement, proposal: ObsidianProposal) {
 		try {
-			if (!proposal.path || !proposal.text || proposal.line_number === undefined) {
-				this.showProposalError(container, "Missing required parameters");
+			if (!proposal.path || !proposal.text || proposal.line_number === undefined || proposal.line_number === null) {
+				this.showProposalError(container, "Missing required parameters (path, text, line_number)");
 				return;
 			}
 			
