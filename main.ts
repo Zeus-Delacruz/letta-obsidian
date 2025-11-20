@@ -1456,8 +1456,14 @@ def obsidian(
         new_str: Replacement string (required for str_replace)
         block_label: Memory block label for attach/detach (optional, defaults to 'obsidian-attached-files')
         query: Search term for search command (required for search)
-        line_number: Zero-indexed line number for insert command (required for insert, 0 = start of file)
+        line_number: Zero-indexed line number for insert command (REQUIRED for insert, 0 = start of file, must be an integer)
         text: Text to insert at line_number (required for insert)
+    
+    Examples:
+        Insert at start of file: obsidian(command="insert", path="/note.md", line_number=0, text="Hello")
+        Insert after line 5: obsidian(command="insert", path="/note.md", line_number=6, text="New line")
+        Create a note: obsidian(command="create", path="/new.md", content="Note content")
+        Replace text: obsidian(command="str_replace", path="/note.md", old_str="old", new_str="new")
     
     Returns:
         JSON proposal for user approval
