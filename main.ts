@@ -1437,18 +1437,27 @@ def obsidian(
     """
     Interact with the Obsidian vault. All operations require user approval.
     
-    Available commands: view, create, str_replace, insert, delete, attach, detach, search, list
+    Commands and their required parameters:
+    - view: path (required) - Read file contents
+    - create: path (required), content (required) - Create new note with content
+    - str_replace: path (required), old_str (required), new_str (required) - Replace text in file
+    - insert: path (required), line_number (required), text (required) - Insert text at specific line (0-indexed)
+    - delete: path (required) - Delete file (moves to trash)
+    - attach: path (required), block_label (optional) - Attach file to memory for persistent context
+    - detach: path (required), block_label (optional) - Remove file from memory
+    - search: query (required) - Search vault by filename and content
+    - list: path (optional, defaults to root) - List files in directory
     
     Args:
         command: The operation to perform (view, create, str_replace, insert, delete, attach, detach, search, list)
-        path: File or directory path for most operations
-        content: Content for create command
-        old_str: String to replace in str_replace command
-        new_str: Replacement string in str_replace command
-        block_label: Memory block label for attach/detach commands (defaults to 'obsidian-attached-files')
-        query: Search query for search command
-        line_number: Line number for insert command
-        text: Text to insert for insert command
+        path: File or directory path (required for most commands)
+        content: Full content for create command (required for create)
+        old_str: Exact string to find and replace (required for str_replace)
+        new_str: Replacement string (required for str_replace)
+        block_label: Memory block label for attach/detach (optional, defaults to 'obsidian-attached-files')
+        query: Search term for search command (required for search)
+        line_number: Zero-indexed line number for insert command (required for insert, 0 = start of file)
+        text: Text to insert at line_number (required for insert)
     
     Returns:
         JSON proposal for user approval
