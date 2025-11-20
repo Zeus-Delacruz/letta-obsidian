@@ -1402,6 +1402,19 @@ export default class LettaPlugin extends Plugin {
 
 				if (isToolAttached) {
 					console.log(`[Letta Plugin] Tool '${toolName}' already attached to agent`);
+					
+					try {
+						console.log(`[Letta Plugin] Setting approval requirement for '${toolName}' on agent ${this.agent.id}...`);
+						await this.client.agents.tools.modifyApproval(
+							this.agent.id,
+							toolName,
+							{ requiresApproval: true }
+						);
+						console.log(`[Letta Plugin] Approval requirement set successfully`);
+					} catch (error) {
+						console.error("[Letta Plugin] Failed to set approval requirement:", error);
+					}
+					
 					return true;
 				}
 			} catch (error) {
