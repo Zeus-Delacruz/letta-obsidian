@@ -1332,6 +1332,23 @@ export default class LettaPlugin extends Plugin {
 				name: error.name,
 				stack: error.stack,
 			});
+			
+			// Try to extract more details from the error object
+			console.error("[Letta Stream] Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+			
+			// Check if error has response data
+			if (error.response) {
+				console.error("[Letta Stream] Error response:", error.response);
+			}
+			if (error.body) {
+				console.error("[Letta Stream] Error body:", error.body);
+			}
+			if (error.data) {
+				console.error("[Letta Stream] Error data:", error.data);
+			}
+			
+			// Log the error message in a user-friendly way
+			new Notice(`Stream error: ${error.message || 'Unknown error'}`);
 
 			// Check if this is a CORS-related error and create appropriate error message
 			if (
@@ -3922,6 +3939,7 @@ class LettaChatView extends ItemView {
 					async (error) => {
 						// Handle streaming error
 						console.error("Streaming error:", error);
+						console.error("Streaming error full details:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
 
 						// Check if it's a CORS error and trigger fallback
 						if (
