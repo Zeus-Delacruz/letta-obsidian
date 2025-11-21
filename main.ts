@@ -1479,8 +1479,12 @@ def obsidian(
     Examples:
         Insert at start of file: obsidian(command="insert", path="/note.md", line_number=0, text="Hello")
         Insert after line 5: obsidian(command="insert", path="/note.md", line_number=6, text="New line")
+        Append to end: First view the file to count lines, then use that line count as line_number
         Create a note: obsidian(command="create", path="/new.md", content="Note content")
         Replace text: obsidian(command="str_replace", path="/note.md", old_str="old", new_str="new")
+    
+    Note: To append to end of file, you must first view the file to count its lines, then insert at that line number.
+          Negative line numbers (like -1) are not supported.
     
     Returns:
         JSON proposal for user approval
