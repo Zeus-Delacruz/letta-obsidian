@@ -20,6 +20,7 @@ data.json
 
 # Development and testing files
 ai-stuff/
+.letta/
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
