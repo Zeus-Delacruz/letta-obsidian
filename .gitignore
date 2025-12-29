@@ -21,6 +21,7 @@ data.json
 # Development and testing files
 ai-stuff/
 .letta/
+.vaultpath
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
