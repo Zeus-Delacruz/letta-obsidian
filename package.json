@@ -1,7 +1,7 @@
 {
 	"name": "letta-obsidian-plugin",
-	"version": "1.3.1",
-	"description": "Obsidian plugin for chatting with a stateful Letta AI agent",
+	"version": "2.0.0",
+	"description": "Obsidian plugin with full vault control via Letta AI agent - 9 commands with HITL approval",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
